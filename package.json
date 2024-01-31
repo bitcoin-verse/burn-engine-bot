@@ -1,8 +1,8 @@
 {
     "name": "burn-engine-bot",
     "version": "1.0.0",
-    "description": "verse burn engine bot",
-    "main": "index.js",
+    "description": "A Telegram bot interfacing with the Ethereum blockchain and Verse Burn Engine",
+    "main": "bot.js",
     "scripts": {
       "start": "node bot.js"
     },
