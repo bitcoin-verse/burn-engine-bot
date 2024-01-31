@@ -436,10 +436,15 @@ const handleTokensBurned = async (event) => {
   postToTelegram(message);
 };
 
-// Post to Multiple Telegram Chats
+// Post to Multiple Telegram Chats with Debug Log
 const postToTelegram = (message) => {
+  console.log(`Sending message to Telegram: ${message}`);
   chatIds.forEach((chatId) => {
-    bot.sendMessage(chatId, message);
+    bot.sendMessage(chatId, message).then(() => {
+      console.log(`Message sent to chat ID ${chatId}`);
+    }).catch((error) => {
+      console.error(`Failed to send message to chat ID ${chatId}: ${error}`);
+    });
   });
 };
 
@@ -486,6 +491,7 @@ monitorEvents();
 
 // Telegram Command Handlers
 bot.onText(/\/burns/, async (msg) => {
+  console.log(`Burns command detected from chat ID ${msg.chat.id}`);
   const chatId = msg.chat.id;
   const last5Burns = await burnEngineContract.getPastEvents("TokensBurned", {
     fromBlock: "latest",
@@ -501,9 +507,12 @@ bot.onText(/\/burns/, async (msg) => {
   });
 
   bot.sendMessage(chatId, response);
+  console.log(`Response to /burns command: ${response}`);
+
 });
 
 bot.onText(/\/burnbalance/, async (msg) => {
+  console.log(`Burnbalance command detected from chat ID ${msg.chat.id}`);
   const chatId = msg.chat.id;
   const balanceWei = await verseTokenContract.methods
     .balanceOf(burnEngineAddress)
@@ -512,4 +521,6 @@ bot.onText(/\/burnbalance/, async (msg) => {
   const response = `Current Burn Engine Balance: ${balanceEth} ETH`;
 
   bot.sendMessage(chatId, response);
+  console.log(`Response to /burnbalance command: ${response}`);
+
 });
