@@ -1,0 +1,15 @@
+{
+    "name": "burn-engine-bot",
+    "version": "1.0.0",
+    "description": "verse burn engine bot",
+    "main": "index.js",
+    "scripts": {
+      "start": "node bot.js"
+    },
+    "dependencies": {
+      "dotenv": "^10.0.0",
+      "node-telegram-bot-api": "^0.53.0",
+      "web3": "^1.5.2"
+    }
+  }
+  
