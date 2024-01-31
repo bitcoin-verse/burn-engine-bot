@@ -423,8 +423,8 @@ const handleTransfer = async (event) => {
   );
 
   const message =
-    `Verse Token Transfer: ${valueEth} ETH transferred to Burn Engine.\n` +
-    `Burn Engine Verse Token Balance: ${burnEngineBalanceEth} ETH`;
+    `Verse Token Transfer: ${valueEth} VERSE transferred to Burn Engine.\n` +
+    `Burn Engine Verse Token Balance: ${burnEngineBalanceEth} VERSE`;
 
   postToTelegram(message);
 };
@@ -432,7 +432,7 @@ const handleTransfer = async (event) => {
 const handleTokensBurned = async (event) => {
   const amountWei = event.returnValues.amount;
   const amountEth = web3.utils.fromWei(amountWei, "ether");
-  const message = `Tokens Burned: ${amountEth} ETH burned.`;
+  const message = `Tokens Burned: 🔥${amountEth} VERSE burned!`;
   postToTelegram(message);
 };
 
@@ -499,11 +499,11 @@ bot.onText(/\/burns/, async (msg) => {
     limit: 5,
   });
 
-  let response = "Last 5 Burns:\n";
+  let response = "Last 5 🔥Burns:\n";
   last5Burns.forEach((event) => {
     const txHash = event.transactionHash;
     const amount = web3.utils.fromWei(event.returnValues.amount, "ether");
-    response += `Amount: ${amount} ETH, Tx: [Etherscan](https://etherscan.io/tx/${txHash})\n`;
+    response += `Amount: ${amount} VERSE, Tx: [Etherscan](https://etherscan.io/tx/${txHash})\n`;
   });
 
   bot.sendMessage(chatId, response);
@@ -518,7 +518,7 @@ bot.onText(/\/burnbalance/, async (msg) => {
     .balanceOf(burnEngineAddress)
     .call();
   const balanceEth = web3.utils.fromWei(balanceWei, "ether");
-  const response = `Current Burn Engine Balance: ${balanceEth} ETH`;
+  const response = `Current Burn Engine Balance: ${balanceEth} VERSE`;
 
   bot.sendMessage(chatId, response);
   console.log(`Response to /burnbalance command: ${response}`);
