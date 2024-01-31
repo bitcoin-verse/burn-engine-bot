@@ -4,7 +4,7 @@
       "builder": "NIXPACKS",
       "config": {
         "python": {
-          "installCommand": "pip install -r requirements.txt",
+          "installCommand": "pip install --upgrade pip && pip install -r requirements.txt",
           "startCommand": "python bot.py"
         }
       }
