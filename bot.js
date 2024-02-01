@@ -124,18 +124,6 @@ const handleTokensBurned = async (event) => {
   postToTelegramWithGIF(flamethrowerGifUrl); // Post the flamethrower GIF
 };
 
-const handleTokensBurned = async (event) => {
-    await fetchVerseUsdRate(); // Update the conversion rate
-    const amountWei = event.returnValues.amount;
-    const amountEth = web3.utils.fromWei(amountWei, 'ether');
-    const formattedAmount = formatAmount(amountEth);
-
-    const message = `🔥💥 Tokens Burned: ${formattedAmount}\n` +
-                    `The burn engine's flames roar!`;
-    postToTelegram(message);
-    postToTelegramWithGIF(flamethrowerGifUrl); // Post a new flamethrower GIF
-};
-
 let lastProcessedBlock = 0; // Initialized later
 
 
