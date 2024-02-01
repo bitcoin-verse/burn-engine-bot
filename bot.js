@@ -124,8 +124,6 @@ const handleTokensBurned = async (event) => {
   postToTelegramWithGIF(flamethrowerGifUrl); // Post the flamethrower GIF
 };
 
-let lastProcessedBlock = 0; // Initialized later
-
 
 const const monitorEvents = async () => {
   while (true) {
