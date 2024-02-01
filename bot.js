@@ -3,26 +3,20 @@ const Web3 = require("web3");
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
-// Environment Variables
 const infuraUrl = process.env.INFURA_URL;
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatIds = process.env.TELEGRAM_CHAT_IDS.split(",");
 const flamethrowerGifUrl =
-  "https://media.giphy.com/media/B0yHMGZZLbBxS/giphy.gif"; // Replace with your GIF URL
+  "https://media.giphy.com/media/B0yHMGZZLbBxS/giphy.gif";
 
-// Web3 and Telegram Bot Setup
 const web3 = new Web3(new Web3.providers.HttpProvider(infuraUrl));
 const bot = new TelegramBot(botToken, { polling: true });
 
-// Contract Details
 const verseTokenAddress = "0x249cA82617eC3DfB2589c4c17ab7EC9765350a18";
 const burnEngineAddress = "0x6b2a57dE29e6d73650Cb17b7710F2702b1F73CB8";
+const verseTokenABI = require("./VerseTokenABI.json");
+const burnEngineABI = require("./BurnEngineABI.json");
 
-// Add your ABI JSON here
-const verseTokenABI = require("./VerseTokenABI.json"); // Link to Verse Token ABI JSON
-const burnEngineABI = require("./BurnEngineABI.json"); // Link to Burn Engine ABI JSON
-
-// Create Contract Instances
 const verseTokenContract = new web3.eth.Contract(
   verseTokenABI,
   verseTokenAddress
@@ -32,24 +26,21 @@ const burnEngineContract = new web3.eth.Contract(
   burnEngineAddress
 );
 
-let lastKnownBalanceEth = 0; // Variable to store the last known balance
-let verseUsdRate = 0; // USD conversion rate for VERSE
-let lastProcessedBlock = 0; // Variable to store the last processed block number
+let lastKnownBalanceEth = 0;
+let verseUsdRate = 0;
+let lastProcessedBlock = 0;
 
-// Fetch USD rate for VERSE
 const fetchVerseUsdRate = async () => {
   try {
     const response = await axios.get(
       "https://markets.api.bitcoin.com/rates/convertor/?q=USD&c=VERSE"
     );
     verseUsdRate = response.data.USD.rate;
-    console.log(`Fetched USD rate for VERSE: ${verseUsdRate}`);
   } catch (e) {
     console.error(`Error fetching USD rate: ${e.message}`);
   }
 };
 
-// Format amount in VERSE and USD
 const formatAmount = (verseAmount) => {
   const formattedVerse = parseFloat(verseAmount).toLocaleString("en-US", {
     maximumFractionDigits: 2,
@@ -61,8 +52,6 @@ const formatAmount = (verseAmount) => {
   return `${formattedVerse} VERSE (~$${formattedUsd} USD)`;
 };
 
-// Initial Setup: Fetch the current balance of the Burn Engine
-
 const initialize = async () => {
   try {
     const balanceWei = await verseTokenContract.methods
@@ -70,20 +59,16 @@ const initialize = async () => {
       .call();
     lastKnownBalanceEth = web3.utils.fromWei(balanceWei, "ether");
     console.log(`Initial Burn Engine Balance: ${lastKnownBalanceEth} VERSE`);
-    await fetchVerseUsdRate(); // Fetch the initial conversion rate
-    
-    const currentBlock = await web3.eth.getBlockNumber();
-    lastProcessedBlock = currentBlock; // Initialize the last processed block
-    console.log(`Starting event monitoring from block: ${currentBlock}`);
-    monitorEvents(); // Start monitoring events after initialization
+    await fetchVerseUsdRate();
+
+    lastProcessedBlock = await web3.eth.getBlockNumber();
+    console.log(`Starting event monitoring from block: ${lastProcessedBlock}`);
+    monitorEvents();
   } catch (e) {
     console.error(`Error during initialization: ${e.message}`);
   }
 };
 
-// Event Handlers and Monitoring Loop (as previously defined)
-
-// Post to Multiple Telegram Chats
 const postToTelegram = (message) => {
   chatIds.forEach((chatId) => {
     bot.sendMessage(chatId, message);
@@ -96,9 +81,8 @@ const postToTelegramWithGIF = (gifUrl) => {
   });
 };
 
-// Event Handlers
 const handleTransfer = async (event) => {
-  await fetchVerseUsdRate(); // Update the conversion rate
+  await fetchVerseUsdRate();
   const valueWei = event.returnValues.value;
   const valueEth = web3.utils.fromWei(valueWei, "ether");
   const formattedMessage = formatAmount(valueEth);
@@ -116,151 +100,170 @@ const handleTransfer = async (event) => {
 };
 
 const handleTokensBurned = async (event) => {
-  await fetchVerseUsdRate(); // Update the conversion rate
+  await fetchVerseUsdRate();
   const amountWei = event.returnValues.amount;
   const amountEth = web3.utils.fromWei(amountWei, "ether");
   const formattedMessage = formatAmount(amountEth);
 
-  lastKnownBalanceEth = 0; // Balance is zero after burn
+  lastKnownBalanceEth = 0;
   const message =
     `🔥💥 Tokens Burned: ${formattedMessage}\n` +
     `The burn engine's flames roar!`;
   postToTelegram(message);
-  postToTelegramWithGIF(flamethrowerGifUrl); // Post the flamethrower GIF
+  postToTelegramWithGIF(flamethrowerGifUrl);
 };
-
 
 const monitorEvents = async () => {
   while (true) {
-      try {
-          const latestBlock = await web3.eth.getBlockNumber();
+    try {
+      const latestBlock = await web3.eth.getBlockNumber();
+      const fromBlock =
+        lastProcessedBlock > 0 ? lastProcessedBlock + 1 : 18481385;
 
-          // Use startBlock if lastProcessedBlock is not initialized
-          const fromBlock = lastProcessedBlock > 0 ? lastProcessedBlock + 1 : 18481385;
-
-          if (fromBlock <= latestBlock) {
-              const tokensBurnedEvents = await burnEngineContract.getPastEvents('TokensBurned', {
-                  fromBlock: fromBlock,
-                  toBlock: 'latest'
-              });
-
-              tokensBurnedEvents.forEach(event => handleTokensBurned(event));
-              lastProcessedBlock = latestBlock;
+      if (fromBlock <= latestBlock) {
+        const transferEvents = await verseTokenContract.getPastEvents(
+          "Transfer",
+          {
+            fromBlock: fromBlock,
+            toBlock: "latest",
+            filter: { to: burnEngineAddress },
           }
+        );
 
-          await new Promise(resolve => setTimeout(resolve, 30000)); // Wait for 30 seconds
-      } catch (e) {
-          console.error(`Error in event monitoring: ${e.message}`);
-          await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 60 seconds in case of an error
+        transferEvents.forEach((event) => handleTransfer(event));
+
+        const tokensBurnedEvents = await burnEngineContract.getPastEvents(
+          "TokensBurned",
+          {
+            fromBlock: fromBlock,
+            toBlock: "latest",
+          }
+        );
+
+        tokensBurnedEvents.forEach((event) => handleTokensBurned(event));
+        lastProcessedBlock = latestBlock;
+      } else {
+        console.log(`💤 No new events to process. Next check in 30 seconds.`);
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 30000)); // Wait for 30 seconds
+    } catch (e) {
+      console.error(`Error in event monitoring: ${e.message}`);
+      await new Promise((resolve) => setTimeout(resolve, 60000)); // Wait for 60 seconds in case of an error
+    }
   }
 };
-
-
-
-
 
 const fetchCirculatingSupply = async () => {
   try {
-      const response = await axios.get('https://markets.api.bitcoin.com/coin/data/circulating?c=VERSE');
-      return response.data.circulatingSupply;
+    const response = await axios.get(
+      "https://markets.api.bitcoin.com/coin/data/circulating?c=VERSE"
+    );
+    return response.data.circulatingSupply;
   } catch (e) {
-      console.error(`Error fetching circulating supply: ${e.message}`);
-      return null;
+    console.error(`Error fetching circulating supply: ${e.message}`);
+    return null;
   }
 };
 
-// Function to fetch the last 5 'TokensBurned' events and format the response
 const fetchLastFiveBurns = async () => {
   try {
-      await fetchVerseUsdRate(); // Update the conversion rate
+    await fetchVerseUsdRate();
 
-      const events = await burnEngineContract.getPastEvents('TokensBurned', {
-          fromBlock: 'earliest',
-          toBlock: 'latest'
-      });
+    const events = await burnEngineContract.getPastEvents("TokensBurned", {
+      fromBlock: "earliest",
+      toBlock: "latest",
+    });
 
-      // Get the last 5 events
-      const lastFiveBurns = events.slice(-5).reverse();
+    const lastFiveBurns = events.slice(-5).reverse();
+    let response = "**🔥 Last 5 Burns**\n\n";
+    lastFiveBurns.forEach((event) => {
+      const txHash = event.transactionHash;
+      const amountWei = event.returnValues.amount;
+      const amountEth = web3.utils.fromWei(amountWei, "ether");
+      const formattedMessage = formatAmount(amountEth);
+      response += `🔥 Amount: ${formattedMessage} - [Etherscan](https://etherscan.io/tx/${txHash})\n\n`;
+    });
 
-      let response = "**🔥 Last 5 Burns**\n\n";
-      lastFiveBurns.forEach(event => {
-          const txHash = event.transactionHash;
-          const amountWei = event.returnValues.amount;
-          const amountEth = web3.utils.fromWei(amountWei, 'ether');
-          const formattedMessage = formatAmount(amountEth);
-          response += `🔥 Amount: ${formattedMessage} - [Etherscan](https://etherscan.io/tx/${txHash})\n\n`;
-      });
-
-      return response;
+    return response;
   } catch (e) {
-      console.error(`Error fetching last five burns: ${e.message}`);
-      return "Error fetching last five burns.";
+    console.error(`Error fetching last five burns: ${e.message}`);
+    return "Error fetching last five burns.";
   }
 };
 
 const handleTotalBurnedCommand = async () => {
   try {
-      const startBlock = 18481385; // Burn engine launch block
-      const totalSupply = 210e9; // 210 billion VERSE
-      const circulatingSupply = await fetchCirculatingSupply() || totalSupply; // Fallback to total supply if API fails
+    const startBlock = 18481385;
+    const totalSupply = 210e9;
+    const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
 
-      const events = await burnEngineContract.getPastEvents('TokensBurned', {
-          fromBlock: startBlock,
-          toBlock: 'latest'
-      });
+    const events = await burnEngineContract.getPastEvents("TokensBurned", {
+      fromBlock: startBlock,
+      toBlock: "latest",
+    });
 
-      const totalBurnedWei = events.reduce((sum, event) => sum + BigInt(event.returnValues.amount), BigInt(0));
-      const totalBurnedEth = web3.utils.fromWei(totalBurnedWei.toString(), 'ether');
-      const formattedTotalBurned = parseFloat(totalBurnedEth).toLocaleString('en-US', { maximumFractionDigits: 2 });
-      const usdValue = totalBurnedEth * verseUsdRate;
-      const formattedUsd = usdValue.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    const totalBurnedWei = events.reduce(
+      (sum, event) => sum + BigInt(event.returnValues.amount),
+      BigInt(0)
+    );
+    const totalBurnedEth = web3.utils.fromWei(
+      totalBurnedWei.toString(),
+      "ether"
+    );
+    const formattedTotalBurned = parseFloat(totalBurnedEth).toLocaleString(
+      "en-US",
+      { maximumFractionDigits: 2 }
+    );
+    const usdValue = totalBurnedEth * verseUsdRate;
+    const formattedUsd = usdValue.toLocaleString("en-US", {
+      maximumFractionDigits: 2,
+    });
 
-      const totalBurnEvents = events.length;
-      const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
-      const circulatingSupplyBurnedPercent = (totalBurnedEth / circulatingSupply) * 100;
+    const totalBurnEvents = events.length;
+    const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
+    const circulatingSupplyBurnedPercent =
+      (totalBurnedEth / circulatingSupply) * 100;
 
-      let response = "** Total Burned ** \n\n";
-      response += `💥 Cumulative Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n\n`;
-      response += `🔢 Total Burn Engine Ignitions: ${totalBurnEvents}\n\n`;
-      response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(2)}%\n\n`;
-      response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(2)}%\n\n`;
-      response += `👨‍🚀 Visit [Burn Engine](https://verse.bitcoin.com/burn/) for detailed burn stats`;
+    let response = "** Total Burned ** \n\n";
+    response += `💥 Cumulative Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n\n`;
+    response += `🔢 Total Burn Engine Ignitions: ${totalBurnEvents}\n\n`;
+    response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(
+      2
+    )}%\n\n`;
+    response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(
+      2
+    )}%\n\n`;
+    response += `👨‍🚀 Visit [Burn Engine](https://verse.bitcoin.com/burn/) for detailed burn stats`;
 
-
-      return response;
+    return response;
   } catch (e) {
-      console.error(`Error in /totalburned command: ${e.message}`);
-      return "Error processing /totalburned command.";
+    console.error(`Error in /totalburned command: ${e.message}`);
+    return "Error processing /totalburned command.";
   }
 };
 
 bot.onText(/\/totalburned/, async (msg) => {
   const chatId = msg.chat.id;
-  postToTelegramWithGIF(flamethrowerGifUrl); // Post the flamethrower GIF
+  postToTelegramWithGIF(flamethrowerGifUrl);
   const response = await handleTotalBurnedCommand();
-  bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+  bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
 });
 
-
-// Telegram Command Handler for '/burns'
 bot.onText(/\/burns/, async (msg) => {
   const chatId = msg.chat.id;
   const response = await fetchLastFiveBurns();
-  bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+  bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
 });
 
-
-// Telegram Command Handlers
 bot.onText(/\/enginebalance/, async (msg) => {
   const chatId = msg.chat.id;
   let response;
-
   if (lastKnownBalanceEth > 0) {
     const formattedBalance = formatAmount(lastKnownBalanceEth);
     response = `🔥 Current Burn Engine Balance: ${formattedBalance}`;
   } else {
-    await fetchVerseUsdRate(); // Update the conversion rate
+    await fetchVerseUsdRate();
     const balanceWei = await verseTokenContract.methods
       .balanceOf(burnEngineAddress)
       .call();
@@ -268,9 +271,7 @@ bot.onText(/\/enginebalance/, async (msg) => {
     const formattedBalance = formatAmount(balanceEth);
     response = `🔥 Current Burn Engine Balance: ${formattedBalance}`;
   }
-
   bot.sendMessage(chatId, response);
 });
 
-// Start the application
 initialize();
