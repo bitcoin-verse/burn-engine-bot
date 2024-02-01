@@ -10,6 +10,6 @@
         "dotenv": "^10.0.0",
         "node-telegram-bot-api": "^0.53.0",
         "web3": "^1.5.2",
-        "axios": "^0.27.2" // Add axios with the latest version or the version you prefer
+        "axios": "^0.27.2"
     }
 }
