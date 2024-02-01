@@ -124,32 +124,49 @@ const handleTokensBurned = async (event) => {
   postToTelegramWithGIF(flamethrowerGifUrl); // Post the flamethrower GIF
 };
 
-// Monitoring Loop
-// Monitoring Loop
-const monitorEvents = async () => {
+const handleTokensBurned = async (event) => {
+    await fetchVerseUsdRate(); // Update the conversion rate
+    const amountWei = event.returnValues.amount;
+    const amountEth = web3.utils.fromWei(amountWei, 'ether');
+    const formattedAmount = formatAmount(amountEth);
+
+    const message = `🔥💥 Tokens Burned: ${formattedAmount}\n` +
+                    `The burn engine's flames roar!`;
+    postToTelegram(message);
+    postToTelegramWithGIF(flamethrowerGifUrl); // Post a new flamethrower GIF
+};
+
+let lastProcessedBlock = 0; // Initialized later
+
+
+const const monitorEvents = async () => {
   while (true) {
       try {
           const latestBlock = await web3.eth.getBlockNumber();
-          console.log(`🔍 Checking for new events. Latest block: ${latestBlock}`);
 
-          if (lastProcessedBlock < latestBlock) {
-              const fromBlock = Math.max(lastProcessedBlock + 1, latestBlock - 50);
-              console.log(`🔄 Processing from block ${fromBlock} to block ${latestBlock}`);
+          // Use startBlock if lastProcessedBlock is not initialized
+          const fromBlock = lastProcessedBlock > 0 ? lastProcessedBlock + 1 : 18481385;
 
-              // Process Transfer and TokensBurned events (as before)
+          if (fromBlock <= latestBlock) {
+              const tokensBurnedEvents = await burnEngineContract.getPastEvents('TokensBurned', {
+                  fromBlock: fromBlock,
+                  toBlock: 'latest'
+              });
 
-              lastProcessedBlock = latestBlock; // Update the last processed block
-          } else {
-              console.log(`💤 No new blocks to process. Waiting for next check...`);
+              tokensBurnedEvents.forEach(event => handleTokensBurned(event));
+              lastProcessedBlock = latestBlock;
           }
 
           await new Promise(resolve => setTimeout(resolve, 30000)); // Wait for 30 seconds
       } catch (e) {
-          console.error(`⚠️ Error in event monitoring: ${e.message}`);
-          await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 60 seconds
+          console.error(`Error in event monitoring: ${e.message}`);
+          await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 60 seconds in case of an error
       }
   }
 };
+
+
+
 
 
 const fetchCirculatingSupply = async () => {
@@ -264,5 +281,18 @@ bot.onText(/\/enginebalance/, async (msg) => {
   bot.sendMessage(chatId, response);
 });
 
+// Function to initialize the application
+const initialize = async () => {
+  try {
+      // ... existing initialization logic
+
+      lastProcessedBlock = await web3.eth.getBlockNumber(); // This sets the initial lastProcessedBlock
+
+      monitorEvents(); // Start monitoring events after initialization
+  } catch (e) {
+      console.error(`Error during initialization: ${e.message}`);
+  }
+};
+
 // Start the application
-initialize().then(monitorEvents);
+initialize();
