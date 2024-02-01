@@ -172,6 +172,43 @@ const monitorEvents = async () => {
   }
 };
 
+// Function to fetch the last 5 'TokensBurned' events and format the response
+const fetchLastFiveBurns = async () => {
+  try {
+      await fetchVerseUsdRate(); // Update the conversion rate
+
+      const events = await burnEngineContract.getPastEvents('TokensBurned', {
+          fromBlock: 'earliest',
+          toBlock: 'latest'
+      });
+
+      // Get the last 5 events
+      const lastFiveBurns = events.slice(-5).reverse();
+
+      let response = "Last 5 Burns:\n";
+      lastFiveBurns.forEach(event => {
+          const txHash = event.transactionHash;
+          const amountWei = event.returnValues.amount;
+          const amountEth = web3.utils.fromWei(amountWei, 'ether');
+          const formattedMessage = formatAmount(amountEth);
+          response += `Amount: ${formattedMessage}, Tx: [Etherscan](https://etherscan.io/tx/${txHash})\n`;
+      });
+
+      return response;
+  } catch (e) {
+      console.error(`Error fetching last five burns: ${e.message}`);
+      return "Error fetching last five burns.";
+  }
+};
+
+// Telegram Command Handler for '/burns'
+bot.onText(/\/burns/, async (msg) => {
+  const chatId = msg.chat.id;
+  const response = await fetchLastFiveBurns();
+  bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+});
+
+
 // Telegram Command Handlers
 bot.onText(/\/burnbalance/, async (msg) => {
   const chatId = msg.chat.id;
