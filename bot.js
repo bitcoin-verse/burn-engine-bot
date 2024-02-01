@@ -68,9 +68,12 @@ const initialize = async () => {
       .balanceOf(burnEngineAddress)
       .call();
     lastKnownBalanceEth = web3.utils.fromWei(balanceWei, "ether");
+    lastProcessedBlock = await web3.eth.getBlockNumber(); // This sets the initial lastProcessedBlock
+
     console.log(`Initial Burn Engine Balance: ${lastKnownBalanceEth} VERSE`);
     await fetchVerseUsdRate(); // Fetch the initial conversion rate
     lastProcessedBlock = await web3.eth.getBlockNumber(); // Initialize the last processed block
+    monitorEvents(); // Start monitoring events after initialization
   } catch (e) {
     console.error(`Error during initialization: ${e.message}`);
   }
@@ -267,18 +270,7 @@ bot.onText(/\/enginebalance/, async (msg) => {
   bot.sendMessage(chatId, response);
 });
 
-// Function to initialize the application
-const initialize = async () => {
-  try {
-      // ... existing initialization logic
 
-      lastProcessedBlock = await web3.eth.getBlockNumber(); // This sets the initial lastProcessedBlock
-
-      monitorEvents(); // Start monitoring events after initialization
-  } catch (e) {
-      console.error(`Error during initialization: ${e.message}`);
-  }
-};
 
 // Start the application
 initialize();
