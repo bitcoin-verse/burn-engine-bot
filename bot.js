@@ -172,6 +172,16 @@ const monitorEvents = async () => {
   }
 };
 
+const fetchCirculatingSupply = async () => {
+  try {
+      const response = await axios.get('https://markets.api.bitcoin.com/coin/data/circulating?c=VERSE');
+      return response.data.circulatingSupply;
+  } catch (e) {
+      console.error(`Error fetching circulating supply: ${e.message}`);
+      return null;
+  }
+};
+
 // Function to fetch the last 5 'TokensBurned' events and format the response
 const fetchLastFiveBurns = async () => {
   try {
@@ -185,13 +195,13 @@ const fetchLastFiveBurns = async () => {
       // Get the last 5 events
       const lastFiveBurns = events.slice(-5).reverse();
 
-      let response = "Last 5 Burns:\n";
+      let response = "**🔥 Last 5 Burns:**\n\n";
       lastFiveBurns.forEach(event => {
           const txHash = event.transactionHash;
           const amountWei = event.returnValues.amount;
           const amountEth = web3.utils.fromWei(amountWei, 'ether');
           const formattedMessage = formatAmount(amountEth);
-          response += `Amount: ${formattedMessage}, Tx: [Etherscan](https://etherscan.io/tx/${txHash})\n`;
+          response += `🔥 Amount: ${formattedMessage} - [Etherscan](https://etherscan.io/tx/${txHash})\n\n`;
       });
 
       return response;
@@ -200,6 +210,48 @@ const fetchLastFiveBurns = async () => {
       return "Error fetching last five burns.";
   }
 };
+
+const handleTotalBurnedCommand = async () => {
+  try {
+      const startBlock = 18481385; // Burn engine launch block
+      const totalSupply = 210e9; // 210 billion VERSE
+      const circulatingSupply = await fetchCirculatingSupply() || totalSupply; // Fallback to total supply if API fails
+
+      const events = await burnEngineContract.getPastEvents('TokensBurned', {
+          fromBlock: startBlock,
+          toBlock: 'latest'
+      });
+
+      const totalBurnedWei = events.reduce((sum, event) => sum + BigInt(event.returnValues.amount), BigInt(0));
+      const totalBurnedEth = web3.utils.fromWei(totalBurnedWei.toString(), 'ether');
+      const formattedTotalBurned = parseFloat(totalBurnedEth).toLocaleString('en-US', { maximumFractionDigits: 2 });
+      const usdValue = totalBurnedEth * verseUsdRate;
+      const formattedUsd = usdValue.toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+      const totalBurnEvents = events.length;
+      const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
+      const circulatingSupplyBurnedPercent = (totalBurnedEth / circulatingSupply) * 100;
+
+      let response = "🔥 Total Burned:\n";
+      response += `💥 Cumulative Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n`;
+      response += `🔢 Total Burn Engine Ignitions: ${totalBurnEvents}\n`;
+      response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(2)}%\n`;
+      response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(2)}%`;
+
+      return response;
+  } catch (e) {
+      console.error(`Error in /totalburned command: ${e.message}`);
+      return "Error processing /totalburned command.";
+  }
+};
+
+bot.onText(/\/totalburned/, async (msg) => {
+  const chatId = msg.chat.id;
+  postToTelegramWithGIF(flamethrowerGifUrl); // Post the flamethrower GIF
+  const response = await handleTotalBurnedCommand();
+  bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
+});
+
 
 // Telegram Command Handler for '/burns'
 bot.onText(/\/burns/, async (msg) => {
