@@ -34,6 +34,7 @@ const burnEngineContract = new web3.eth.Contract(
 
 let lastKnownBalanceEth = 0; // Variable to store the last known balance
 let verseUsdRate = 0; // USD conversion rate for VERSE
+let lastProcessedBlock = 0; // Variable to store the last processed block number
 
 // Fetch USD rate for VERSE
 const fetchVerseUsdRate = async () => {
@@ -69,6 +70,7 @@ const initialize = async () => {
     lastKnownBalanceEth = web3.utils.fromWei(balanceWei, "ether");
     console.log(`Initial Burn Engine Balance: ${lastKnownBalanceEth} VERSE`);
     await fetchVerseUsdRate(); // Fetch the initial conversion rate
+    lastProcessedBlock = await web3.eth.getBlockNumber(); // Initialize the last processed block
   } catch (e) {
     console.error(`Error during initialization: ${e.message}`);
   }
@@ -123,54 +125,32 @@ const handleTokensBurned = async (event) => {
 };
 
 // Monitoring Loop
+// Monitoring Loop
 const monitorEvents = async () => {
   while (true) {
-    try {
-      const latestBlock = await web3.eth.getBlockNumber();
-      console.log(`🔍 Checking for new events. Latest block: ${latestBlock}`);
+      try {
+          const latestBlock = await web3.eth.getBlockNumber();
+          console.log(`🔍 Checking for new events. Latest block: ${latestBlock}`);
 
-      const fromBlock = Math.max(lastKnownBalanceEth + 1, latestBlock - 50); // Process new blocks since last check
+          if (lastProcessedBlock < latestBlock) {
+              const fromBlock = Math.max(lastProcessedBlock + 1, latestBlock - 50);
+              console.log(`🔄 Processing from block ${fromBlock} to block ${latestBlock}`);
 
-      if (fromBlock <= latestBlock) {
-        console.log(
-          `🔄 Processing from block ${fromBlock} to block ${latestBlock}`
-        );
+              // Process Transfer and TokensBurned events (as before)
 
-        const transferEvents = await verseTokenContract.getPastEvents(
-          "Transfer",
-          {
-            fromBlock: fromBlock,
-            toBlock: "latest",
-            filter: { to: burnEngineAddress },
+              lastProcessedBlock = latestBlock; // Update the last processed block
+          } else {
+              console.log(`💤 No new blocks to process. Waiting for next check...`);
           }
-        );
 
-        console.log(`📦 Found ${transferEvents.length} new Transfer events`);
-        transferEvents.forEach((event) => handleTransfer(event));
-
-        const tokensBurnedEvents = await burnEngineContract.getPastEvents(
-          "TokensBurned",
-          {
-            fromBlock: fromBlock,
-            toBlock: "latest",
-          }
-        );
-
-        console.log(
-          `🔥 Found ${tokensBurnedEvents.length} new TokensBurned events`
-        );
-        tokensBurnedEvents.forEach((event) => handleTokensBurned(event));
-      } else {
-        console.log(`💤 No new blocks to process. Waiting for next check...`);
+          await new Promise(resolve => setTimeout(resolve, 30000)); // Wait for 30 seconds
+      } catch (e) {
+          console.error(`⚠️ Error in event monitoring: ${e.message}`);
+          await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 60 seconds
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 30000)); // Wait for 30 seconds
-    } catch (e) {
-      console.error(`⚠️ Error in event monitoring: ${e.message}`);
-      await new Promise((resolve) => setTimeout(resolve, 60000)); // Wait for 60 seconds
-    }
   }
 };
+
 
 const fetchCirculatingSupply = async () => {
   try {
