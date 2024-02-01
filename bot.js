@@ -262,7 +262,7 @@ bot.onText(/\/burns/, async (msg) => {
 
 
 // Telegram Command Handlers
-bot.onText(/\/burnbalance/, async (msg) => {
+bot.onText(/\/enginebalance/, async (msg) => {
   const chatId = msg.chat.id;
   let response;
 
