@@ -125,7 +125,7 @@ const handleTokensBurned = async (event) => {
 };
 
 
-const const monitorEvents = async () => {
+const monitorEvents = async () => {
   while (true) {
       try {
           const latestBlock = await web3.eth.getBlockNumber();
