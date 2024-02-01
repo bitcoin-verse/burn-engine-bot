@@ -4,12 +4,12 @@
     "description": "A Telegram bot interfacing with the Ethereum blockchain and Verse Burn Engine",
     "main": "bot.js",
     "scripts": {
-      "start": "node bot.js"
+        "start": "node bot.js"
     },
     "dependencies": {
-      "dotenv": "^10.0.0",
-      "node-telegram-bot-api": "^0.53.0",
-      "web3": "^1.5.2"
+        "dotenv": "^10.0.0",
+        "node-telegram-bot-api": "^0.53.0",
+        "web3": "^1.5.2",
+        "axios": "^0.27.2" // Add axios with the latest version or the version you prefer
     }
-  }
-  
+}
