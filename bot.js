@@ -216,7 +216,9 @@ const handleTotalBurnedCommand = async () => {
       response += `💥 Cumulative Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n\n`;
       response += `🔢 Total Burn Engine Ignitions: ${totalBurnEvents}\n\n`;
       response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(2)}%\n\n`;
-      response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(2)}%`;
+      response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(2)}%\n\n`;
+      response += `👨‍🚀 Visit [Burn Engine](https://verse.bitcoin.com/burn/) for detailed burn stats`;
+
 
       return response;
   } catch (e) {
