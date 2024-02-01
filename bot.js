@@ -103,7 +103,7 @@ const handleTransfer = async (event) => {
   const formattedBalance = formatAmount(lastKnownBalanceEth);
 
   const message =
-    `🚀 Verse Token Transfer: ${formattedMessage}\n` +
+    `🚀 Verse Token Deposited into Burn Engine: ${formattedMessage}\n` +
     `🔥 Updated Burn Engine Verse Token Balance: ${formattedBalance}`;
   postToTelegram(message);
 };
@@ -195,7 +195,7 @@ const fetchLastFiveBurns = async () => {
       // Get the last 5 events
       const lastFiveBurns = events.slice(-5).reverse();
 
-      let response = "**🔥 Last 5 Burns:**\n\n";
+      let response = "**🔥 Last 5 Burns**\n\n";
       lastFiveBurns.forEach(event => {
           const txHash = event.transactionHash;
           const amountWei = event.returnValues.amount;
@@ -232,10 +232,10 @@ const handleTotalBurnedCommand = async () => {
       const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
       const circulatingSupplyBurnedPercent = (totalBurnedEth / circulatingSupply) * 100;
 
-      let response = "🔥 Total Burned:\n";
-      response += `💥 Cumulative Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n`;
-      response += `🔢 Total Burn Engine Ignitions: ${totalBurnEvents}\n`;
-      response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(2)}%\n`;
+      let response = "** Total Burned ** \n\n";
+      response += `💥 Cumulative Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n\n`;
+      response += `🔢 Total Burn Engine Ignitions: ${totalBurnEvents}\n\n`;
+      response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(2)}%\n\n`;
       response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(2)}%`;
 
       return response;
