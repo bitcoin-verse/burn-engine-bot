@@ -249,21 +249,23 @@ const handleTotalVerseBurnedCommand = async () => {
   try {
     console.log('Fetching total Verse burned...'); // Additional log for debugging
 
+    const nullAddress = "0x0000000000000000000000000000000000000000";
     const startBlock = 16129240; // Block when Verse token was created
     const totalSupply = 210e9; // 210 billion VERSE
     const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
 
-    console.log(`Fetching burn events from block ${startBlock}...`); // Additional log for debugging
+    console.log(`Fetching Transfer events to null address from block ${startBlock}...`); // Additional log for debugging
 
-    const burnEvents = await verseTokenContract.getPastEvents("Burn", {
+    const transferEventsToNull = await verseTokenContract.getPastEvents("Transfer", {
       fromBlock: startBlock,
       toBlock: "latest",
+      filter: { to: nullAddress }
     });
 
-    console.log(`Fetched ${burnEvents.length} burn events`); // Additional log for debugging
+    console.log(`Fetched ${transferEventsToNull.length} Transfer events to null address`); // Additional log for debugging
 
-    const totalBurnedWei = burnEvents.reduce(
-      (sum, event) => sum + BigInt(event.returnValues._value),
+    const totalBurnedWei = transferEventsToNull.reduce(
+      (sum, event) => sum + BigInt(event.returnValues.value),
       BigInt(0)
     );
 
@@ -280,7 +282,7 @@ const handleTotalVerseBurnedCommand = async () => {
       maximumFractionDigits: 2,
     });
 
-    const totalBurnEvents = burnEvents.length;
+    const totalBurnEvents = transferEventsToNull.length;
     const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
     const circulatingSupplyBurnedPercent =
       (totalBurnedEth / circulatingSupply) * 100;
@@ -302,6 +304,7 @@ const handleTotalVerseBurnedCommand = async () => {
     return "Error processing /totalverseburned command.";
   }
 };
+
 
 bot.onText(/\/totalverseburned/, async (msg) => {
   const chatId = msg.chat.id;
