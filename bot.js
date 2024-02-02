@@ -298,7 +298,7 @@ const handleTotalVerseBurnedCommand = async () => {
 
 bot.onText(/\/totalverseburned/, async (msg) => {
   const chatId = msg.chat.id;
-  postToTelegramWithGIF(flamethrowerGifUrl);
+  postToTelegramWithGIF(engineGifUrl);
   const response = await handleTotalVerseBurnedCommand();
   bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
 });
