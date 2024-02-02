@@ -245,16 +245,19 @@ const handleTotalBurnedCommand = async () => {
   }
 };
 
+
+
+
 const handleTotalVerseBurnedCommand = async () => {
   try {
-    console.log('Fetching total Verse burned...'); // Additional log for debugging
+    console.log('Fetching total Verse burned...');
 
     const nullAddress = "0x0000000000000000000000000000000000000000";
     const startBlock = 16129240; // Block when Verse token was created
     const totalSupply = 210e9; // 210 billion VERSE
-    const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
+    const circulatingSupply = await fetchCirculatingSupply(); // Always fetch circulating supply
 
-    console.log(`Fetching Transfer events to null address from block ${startBlock}...`); // Additional log for debugging
+    console.log(`Fetching Transfer events to null address from block ${startBlock}...`);
 
     const transferEventsToNull = await verseTokenContract.getPastEvents("Transfer", {
       fromBlock: startBlock,
@@ -262,7 +265,7 @@ const handleTotalVerseBurnedCommand = async () => {
       filter: { to: nullAddress }
     });
 
-    console.log(`Fetched ${transferEventsToNull.length} Transfer events to null address`); // Additional log for debugging
+    console.log(`Fetched ${transferEventsToNull.length} Transfer events to null address`);
 
     const totalBurnedWei = transferEventsToNull.reduce(
       (sum, event) => sum + BigInt(event.returnValues.value),
@@ -283,20 +286,15 @@ const handleTotalVerseBurnedCommand = async () => {
     });
 
     const totalBurnEvents = transferEventsToNull.length;
-    const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
-    const circulatingSupplyBurnedPercent =
-      (totalBurnedEth / circulatingSupply) * 100;
+    const totalSupplyBurnedPercent = (parseFloat(totalBurnedEth) / totalSupply) * 100;
+    const circulatingSupplyBurnedPercent = circulatingSupply ? (parseFloat(totalBurnedEth) / circulatingSupply) * 100 : 0;
 
     let response = "** Total VERSE Burned ** \n\n";
     response += `🔥 Cumulative Verse Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n\n`;
     response += `🔥 Total Burn Events: ${totalBurnEvents}\n\n`;
-    response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(
-      2
-    )}%\n\n`;
-    response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(
-      2
-    )}%\n\n`;
-    response += `👨‍🚀 Visit [Verse Token](https://verse.bitcoin.com) for more info`;
+    response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(4)}%\n\n`;
+    response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(4)}% (if circulating supply data is available)\n\n`;
+    response += `👨‍🚀 Visit [Burn Engine](https://verse.bitcoin.com/burn/) for detailed burn stats`;
 
     return response;
   } catch (e) {
