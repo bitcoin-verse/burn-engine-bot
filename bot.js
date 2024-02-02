@@ -8,6 +8,8 @@ const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatIds = process.env.TELEGRAM_CHAT_IDS.split(",");
 const flamethrowerGifUrl =
   "https://media.giphy.com/media/B0yHMGZZLbBxS/giphy.gif";
+const engineGifUrl = 
+  "https://i.imgflip.com/8ef4jd.gif";
 
 const web3 = new Web3(new Web3.providers.HttpProvider(infuraUrl));
 const bot = new TelegramBot(botToken, { polling: true });
@@ -110,7 +112,7 @@ const handleTokensBurned = async (event) => {
     `🔥💥 Tokens Burned: ${formattedMessage}\n` +
     `The burn engine's flames roar!`;
   postToTelegram(message);
-  postToTelegramWithGIF(flamethrowerGifUrl);
+  postToTelegramWithGIF(engineGifUrl);
 };
 
 const monitorEvents = async () => {
