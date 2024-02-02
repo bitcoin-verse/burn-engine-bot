@@ -1,0 +1,4 @@
+totalburned - Display Burn Engine stats
+totalverseburned - Display All Verse Token Burn Stats
+burns - Display last 5 burns
+enginebalance - Display VERSE in Burn Engine right now
