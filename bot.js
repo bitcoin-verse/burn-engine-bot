@@ -251,15 +251,26 @@ const handleTotalVerseBurnedCommand = async () => {
     const totalSupply = 210e9; // 210 billion VERSE
     const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
 
+    console.log('Fetching total Verse burned...'); // Additional log for debugging
+
+    const startBlock = 16129240; // Block when Verse token was created
+    const totalSupply = 210e9; // 210 billion VERSE
+    const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
+
+    console.log(`Fetching burn events from block ${startBlock}...`); // Additional log for debugging
+
     const burnEvents = await verseTokenContract.getPastEvents("Burn", {
       fromBlock: startBlock,
       toBlock: "latest",
     });
 
+    console.log(`Fetched ${burnEvents.length} burn events`); // Additional log for debugging
+
     const totalBurnedWei = burnEvents.reduce(
       (sum, event) => sum + BigInt(event.returnValues._value),
       BigInt(0)
     );
+
     const totalBurnedEth = web3.utils.fromWei(
       totalBurnedWei.toString(),
       "ether"
@@ -298,7 +309,7 @@ const handleTotalVerseBurnedCommand = async () => {
 
 bot.onText(/\/totalverseburned/, async (msg) => {
   const chatId = msg.chat.id;
-  postToTelegramWithGIF(engineGifUrl);
+  await postToTelegramWithGIF(chatId, flamethrowerGifUrl); // Post GIF first
   const response = await handleTotalVerseBurnedCommand();
   bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
 });
@@ -306,7 +317,7 @@ bot.onText(/\/totalverseburned/, async (msg) => {
 
 bot.onText(/\/totalburned/, async (msg) => {
   const chatId = msg.chat.id;
-  postToTelegramWithGIF(flamethrowerGifUrl);
+  await postToTelegramWithGIF(chatId, flamethrowerGifUrl); // Post GIF first
   const response = await handleTotalBurnedCommand();
   bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
 });
