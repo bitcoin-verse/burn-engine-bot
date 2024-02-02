@@ -161,12 +161,16 @@ const fetchCirculatingSupply = async () => {
     const response = await axios.get(
       "https://markets.api.bitcoin.com/coin/data/circulating?c=VERSE"
     );
-    return response.data.circulatingSupply;
+    // Assuming the response is just a raw string of the circulating supply
+    const circulatingSupply = response.data;
+    // Convert the string to a number
+    return Number(circulatingSupply);
   } catch (e) {
     console.error(`Error fetching circulating supply: ${e.message}`);
-    return null;
+    return null; // Return null if there's an error fetching the supply
   }
 };
+
 
 const fetchLastFiveBurns = async () => {
   try {
