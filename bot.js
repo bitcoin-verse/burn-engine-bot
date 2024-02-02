@@ -245,6 +245,65 @@ const handleTotalBurnedCommand = async () => {
   }
 };
 
+const handleTotalVerseBurnedCommand = async () => {
+  try {
+    const startBlock = 16129240; // Block when Verse token was created
+    const totalSupply = 210e9; // 210 billion VERSE
+    const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
+
+    const burnEvents = await verseTokenContract.getPastEvents("Burn", {
+      fromBlock: startBlock,
+      toBlock: "latest",
+    });
+
+    const totalBurnedWei = burnEvents.reduce(
+      (sum, event) => sum + BigInt(event.returnValues._value),
+      BigInt(0)
+    );
+    const totalBurnedEth = web3.utils.fromWei(
+      totalBurnedWei.toString(),
+      "ether"
+    );
+    const formattedTotalBurned = parseFloat(totalBurnedEth).toLocaleString(
+      "en-US",
+      { maximumFractionDigits: 2 }
+    );
+    const usdValue = totalBurnedEth * verseUsdRate;
+    const formattedUsd = usdValue.toLocaleString("en-US", {
+      maximumFractionDigits: 2,
+    });
+
+    const totalBurnEvents = burnEvents.length;
+    const totalSupplyBurnedPercent = (totalBurnedEth / totalSupply) * 100;
+    const circulatingSupplyBurnedPercent =
+      (totalBurnedEth / circulatingSupply) * 100;
+
+    let response = "** Total VERSE Burned ** \n\n";
+    response += `🔥 Cumulative Verse Tokens Burned: ${formattedTotalBurned} VERSE (~$${formattedUsd} USD)\n\n`;
+    response += `🔥 Total Burn Events: ${totalBurnEvents}\n\n`;
+    response += `📊 % of Total Supply Burned: ${totalSupplyBurnedPercent.toFixed(
+      2
+    )}%\n\n`;
+    response += `🌐 % of Circulating Supply Burned: ${circulatingSupplyBurnedPercent.toFixed(
+      2
+    )}%\n\n`;
+    response += `👨‍🚀 Visit [Verse Token](https://verse.bitcoin.com) for more info`;
+
+    return response;
+  } catch (e) {
+    console.error(`Error in /totalverseburned command: ${e.message}`);
+    return "Error processing /totalverseburned command.";
+  }
+};
+
+bot.onText(/\/totalverseburned/, async (msg) => {
+  const chatId = msg.chat.id;
+  postToTelegramWithGIF(flamethrowerGifUrl);
+  const response = await handleTotalVerseBurnedCommand();
+  bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
+});
+
+
 bot.onText(/\/totalburned/, async (msg) => {
   const chatId = msg.chat.id;
   postToTelegramWithGIF(flamethrowerGifUrl);
