@@ -247,10 +247,6 @@ const handleTotalBurnedCommand = async () => {
 
 const handleTotalVerseBurnedCommand = async () => {
   try {
-    const startBlock = 16129240; // Block when Verse token was created
-    const totalSupply = 210e9; // 210 billion VERSE
-    const circulatingSupply = (await fetchCirculatingSupply()) || totalSupply;
-
     console.log('Fetching total Verse burned...'); // Additional log for debugging
 
     const startBlock = 16129240; // Block when Verse token was created
