@@ -63,5 +63,6 @@ function setupTelegramCommands() {
 module.exports = {
     handleTelegramPost,
     handleTelegramPostWithGIF,
-    setupTelegramCommands
+    setupTelegramCommands,
+    notifyError // Exporting for use in bot.js
 };
