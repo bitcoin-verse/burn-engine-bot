@@ -42,21 +42,39 @@ async function notifyError(errorMessage) {
 }
 
 // Function to set up Telegram commands
-function setupTelegramCommands() {
-    // Define your command handlers here
-    // Example: /totalburned command
-    bot.onText(/\/totalburned/, async msg => {
+function setupTelegramCommands({ fetchLastFiveBurns, fetchEngineBalance, handleTotalVerseBurnedCommand, notifyError }) {
+    bot.onText(/\/burns/, async (msg) => {
         const chatId = msg.chat.id;
         try {
-            const response = await getTotalBurnedResponse(); // Replace with actual response function
+            const response = await fetchLastFiveBurns();
             bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
         } catch (error) {
-            await notifyError(
-                `Error in Telegram Command /totalburned: ${error.message}`
-            );
+            notifyError(`Error in /burns command: ${error.message}`);
+            bot.sendMessage(chatId, "Sorry, there was an error processing your /burns command.");
         }
     });
 
+    bot.onText(/\/enginebalance/, async (msg) => {
+        const chatId = msg.chat.id;
+        try {
+            const response = await fetchEngineBalance();
+            bot.sendMessage(chatId, response);
+        } catch (error) {
+            notifyError(`Error in /enginebalance command: ${error.message}`);
+            bot.sendMessage(chatId, "Sorry, there was an error processing your /enginebalance command.");
+        }
+    });
+
+    bot.onText(/\/totalburned/, async (msg) => {
+        const chatId = msg.chat.id;
+        try {
+            const response = await getTotalBurnedResponse();
+            bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
+        } catch (error) {
+            notifyError(`Error in /totalburned command: ${error.message}`);
+            bot.sendMessage(chatId, "Sorry, there was an error processing your /totalburned command.");
+        }
+    });
     // Add more command handlers as needed
 }
 

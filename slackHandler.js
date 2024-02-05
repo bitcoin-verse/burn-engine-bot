@@ -4,14 +4,14 @@ const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
 
 async function handleSlackPost(message) {
     try {
-        await slackClient.chat.postMessage({
-            channel: "#general",
-            text: message
-        });
+        // await slackClient.chat.postMessage({
+        //     channel: "#general",
+        //     text: message
+        // });
 
         // Optionally post to another channel
         await slackClient.chat.postMessage({
-            channel: "#verse",
+            channel: "#verse-burns",
             text: message
         });
     } catch (error) {

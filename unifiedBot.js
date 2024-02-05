@@ -15,6 +15,7 @@ const verseTokenContract = new web3.eth.Contract(verseTokenABI, verseTokenAddres
 
 let verseUsdRate = 0;
 let lastProcessedBlock = 0;
+let lastKnownBalanceEth = 0; 
 
 // Fetch USD Rate
 async function fetchVerseUsdRate() {
@@ -45,25 +46,76 @@ const fetchCirculatingSupply = async () => {
   }
 };
 
-// Event Handlers
-const handleTransfer = async (event) => {
+async function handleTransfer(event) {
   await fetchVerseUsdRate();
   const valueWei = event.returnValues.value;
-  const valueEth = web3.utils.fromWei(valueWei, "ether");
-  const formattedMessage = formatAmount(valueEth);
-  const message = `🚀 Verse Burn Engine Deposit: ${formattedMessage}`;
-  await postUpdate(message);
-};
+  const valueEth = Number(web3.utils.fromWei(valueWei, "ether"));
+
+  const burnEngineBalanceWei = await verseTokenContract.methods.balanceOf("0x6b2a57dE29e6d73650Cb17b7710F2702b1F73CB8").call();
+  lastKnownBalanceEth = Number(web3.utils.fromWei(burnEngineBalanceWei, "ether"));
+
+  const tweetMessage =
+    `🚀 $Verse Burn Engine Deposit Detected: ${numberWithCommas(
+      valueEth.toFixed(2)
+    )} VERSE (~$${numberWithCommas(
+      (valueEth * verseUsdRate).toFixed(2)
+    )} USD)\n` +
+    `🔥 Current Burn Engine Balance: ${numberWithCommas(
+      lastKnownBalanceEth.toFixed(2)
+    )} VERSE (~$${numberWithCommas(
+      (lastKnownBalanceEth * verseUsdRate).toFixed(2)
+    )} USD)\n` +
+    `🔥 Ignite the $Verse Burn Engine with 10,000 $VERSE at https://verse.bitcoin.com/burn and set all $VERSE ablaze!`;
+  await postTweet(tweetMessage);
+}
+
+
+const burnMessages = [
+  "🔥 $VERSE is ablaze with another burn!",
+  "💥 The burn engine roars with $VERSE energy!",
+  "🚀 $VERSE just got hotter with this burn!",
+  "🔥 Feel the heat? That's another $VERSE burn!",
+  "💥 Boom! Another batch of $VERSE bites the dust!",
+  "🚀 Blazing through $VERSE with another fiery burn!",
+  "🔥 The $VERSE furnace is burning bright!",
+  "💥 A scorching $VERSE burn just took place!",
+  "🚀 Rockets ignited! $VERSE is burning up!",
+  "🔥 $VERSE just fueled the flames of the burn engine!",
+  "💥 $VERSE inferno! Another burn executed!",
+  "🚀 Blast off! $VERSE burn is a go!",
+  "🔥 $VERSE incineration in progress!",
+  "💥 Sizzling hot! $VERSE burn achieved!",
+  "🚀 Up in flames! Another $VERSE burn completed!",
+  "🔥 The $VERSE pyre blazes once more!",
+  "💥 Feel the burn! $VERSE is at it again!",
+  "🚀 $VERSE burn-off: Spectacular and fiery!",
+  "🔥 Turning up the heat with $VERSE!",
+  "💥 Flare-up detected in the $VERSE burn engine!",
+  "🚀 Another $VERSE combustion, brilliantly done!",
+  "🔥 $VERSE is sizzling away in the burn chamber!",
+  "💥 Sparking a $VERSE blaze with this burn!",
+  "🚀 The $VERSE flame dances with another burn!",
+  "🔥 $VERSE burn: a fiery spectacle!",
+];
+
+// Randomly select a message
+function getRandomBurnMessage() {
+  const randomIndex = Math.floor(Math.random() * burnMessages.length);
+  return burnMessages[randomIndex];
+}
 
 const handleTokensBurned = async (event) => {
   await fetchVerseUsdRate();
   const amountWei = event.returnValues.amount;
   const amountEth = web3.utils.fromWei(amountWei, "ether");
   const formattedMessage = formatAmount(amountEth);
-  const message = `🔥💥 Tokens Burned: ${formattedMessage}`;
+  const etherscanUrl = `https://etherscan.io/tx/${event.transactionHash}`; // Adjust as needed for Etherscan URL format
+
+  const message = `🔥💥 $VERSE Burn Detected: ${formattedMessage}\n\n${getRandomBurnMessage()}\n\nView on Etherscan: ${etherscanUrl}`;
   await postUpdate(message);
   await postUpdate(await getTotalBurnedResponse());
 };
+
 
 async function handleTotalVerseBurnedCommand(isTelegramCommand = false) {
   try {
@@ -206,6 +258,13 @@ async function initialize() {
 
     // Initialize Telegram commands
     handleTelegramCommand();
+    setupTelegramCommands({
+      verseTokenContract,
+      fetchLastFiveBurns,
+      fetchEngineBalance,
+      handleTotalVerseBurnedCommand,
+      notifyError
+    });
   } catch (e) {
     console.error(`Error during initialization: ${e.message}`);
     await notifyError("Error during initialization: " + e.message);
