@@ -65,7 +65,7 @@ function setupTelegramCommands({ fetchLastFiveBurns, fetchEngineBalance, handleT
         }
     });
 
-    bot.onText(/\/totalburned/, async (msg) => {
+    bot.onText(/\/totalverseburned/, async (msg) => {
         const chatId = msg.chat.id;
         try {
             const response = await getTotalBurnedResponse();
